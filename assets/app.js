@@ -28,7 +28,9 @@
   function enterApp(banner) {
     $('gate').hidden = true;
     $('appWrap').hidden = false;
-    $('modeBanner').innerHTML = banner;
+    const mb = $('modeBanner');
+    if (banner) { mb.innerHTML = banner; mb.hidden = false; }
+    else { mb.innerHTML = ''; mb.hidden = true; }
   }
 
   function wireAppButtons(loggedIn) {
@@ -76,7 +78,7 @@
       if (remote && remote.payload) {
         const data = await window.CRYPTOX.decryptJSON(remote.payload, pass);
         startWith(data, true);
-        enterApp('🔒 Sesión iniciada · datos cifrados de extremo a extremo. Recuerda <strong>Guardar</strong> tras editar.');
+        enterApp('');   // sesión normal: sin banner
       } else if (window.WB && !window.__noSeed) {
         // Uso local del dueño: sembrar con los datos de muestra.
         if (confirm('No hay datos en Firebase para esta cuenta.\n\n¿Importar los datos actuales (de muestra) y guardarlos cifrados ahora?')) {

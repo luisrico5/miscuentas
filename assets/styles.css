@@ -203,6 +203,23 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 22px
   #saveBtn, #logoutBtn { padding: 8px 11px; }
   .theme-toggle { padding: 0 11px; height: 36px; }
   .banner { padding: 8px 12px; font-size: 12.5px; }
+
+  /* Tarjetas más compactas: KPIs 2 por fila, menos separación */
+  .wrap { padding: 10px; }
+  .grid { gap: 9px; }
+  .cols-4 { grid-template-columns: 1fr 1fr; }   /* 4 KPIs → 2×2 */
+  .cols-2 { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; gap: 9px; }
+  .col { gap: 9px; }
+  .card { padding: 13px; }
+  .kpi .value { font-size: 19px; margin: 3px 0 1px; }
+  .kpi .label { font-size: 11px; }
+  .kpi .sub { font-size: 11.5px; }
+  .pills { gap: 8px; margin-bottom: 10px; }
+  .pill { padding: 9px 12px; }
+  .pill .txt { font-size: 12.5px; }
+  .banner { margin-bottom: 10px; }
+  .card h3 { margin-bottom: 9px; }
 }
 
 /* ---------- Puerta de acceso ---------- */
