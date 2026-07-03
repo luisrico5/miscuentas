@@ -105,32 +105,38 @@
     const app = document.getElementById('app');
     app.innerHTML = '';
 
-    // Pills de estado
-    const pills = el(`<div class="pills"></div>`);
-    pills.appendChild(el(`<div class="pill ${R.msgCamino.includes('buen') ? 'good' : 'bad'}"><span class="ico">${R.msgCamino.includes('buen') ? '🧭' : '⚠️'}</span><span class="txt">${R.msgCamino}</span></div>`));
-    pills.appendChild(el(`<div class="pill ${R.sem.endeudamientoAlto ? 'bad' : 'good'}"><span class="ico">${R.sem.endeudamientoAlto ? '💳' : '✅'}</span><span class="txt">${R.msgEndeud}</span></div>`));
-    pills.appendChild(el(`<div class="pill ${R.sem.flujoPositivo ? 'good' : 'warn'}"><span class="ico">${R.sem.flujoPositivo ? '👍' : '📉'}</span><span class="txt">${R.msgFlujo}</span></div>`));
-    app.appendChild(pills);
-
-    // KPIs
+    // KPIs — cada uno con su ícono del Excel y su leyenda de estado debajo
+    const IMG = 'assets/img/';
+    const statusLine = (msg, cls) => `<div class="status ${cls}">${msg}</div>`;
     const kpis = el(`<div class="grid cols-4"></div>`);
+
+    const caminoGood = R.msgCamino.includes('buen');
     kpis.appendChild(el(`<div class="card kpi">
+      <img class="kpi-ico" src="${IMG}image1.png" alt="">
       <div class="label">Ingreso total del mes</div>
       <div class="value">${F.cop(R.ingresoTotal)}</div>
       <div class="sub">${deltaHtml(R.ingresoVar)}</div>
+      ${statusLine(R.msgCamino, caminoGood ? 'good' : 'bad')}
     </div>`));
+
     kpis.appendChild(el(`<div class="card kpi">
+      <img class="kpi-ico" src="${IMG}image2.png" alt="">
       <div class="label">Ahorro del mes</div>
       <div class="value">${F.usd(R.ahorroDolares)}</div>
       <div class="sub">${F.cop(R.ahorroPesos)} en pesos · <span class="badge ${R.sem.ahorroSaludable ? 'ok' : 'no'}">${R.sem.ahorroSaludable ? 'Saludable' : 'Bajo'}</span></div>
-      <div class="sub">${deltaHtml(R.ahorroDolVar)}</div>
+      ${statusLine(R.msgAhorro, R.sem.ahorroSaludable ? 'good' : 'warn')}
     </div>`));
+
     kpis.appendChild(el(`<div class="card kpi">
+      <img class="kpi-ico" src="${IMG}image4.png" alt="">
       <div class="label">Flujo libre</div>
       <div class="value">${F.cop(R.flujoLibre)}</div>
       <div class="sub">${F.pct1(R.pctIngresos)} de los ingresos</div>
+      ${statusLine(R.msgFlujo, R.sem.flujoPositivo ? 'good' : 'warn')}
     </div>`));
+
     kpis.appendChild(el(`<div class="card kpi">
+      <img class="kpi-ico" src="${IMG}image7.png" alt="">
       <div class="label">Ahorrado en dólares (año)</div>
       <div class="value">${R.totalUSD} USD</div>
       <div class="sub">Meta anual: ${F.pct0(R.metaPct)} cumplido</div>
@@ -187,12 +193,13 @@
     deu.appendChild(drows);
     const totDeuda = deudasList.reduce((a, d) => a + d.valor, 0);
     deu.appendChild(el(`<div class="total-row"><span>Total deudas</span><span>${F.cop(totDeuda)}</span></div>`));
+    deu.appendChild(el(`<div class="status ${R.sem.endeudamientoAlto ? 'bad' : 'good'}"><img class="status-ico" src="${IMG}image5.png" alt="">${R.msgEndeud}</div>`));
 
-    // -- Meta anual de ahorro (medio círculo / gauge, como el Excel)
+    // -- Meta anual de ahorro (medio círculo compacto) + Prima extralegal al lado
     const meta = el(`<div class="card"><h3>Meta anual de ahorro</h3></div>`);
-    const mflex = el(`<div class="chart-flex"></div>`);
+    const mflex = el(`<div class="chart-flex meta-flex"></div>`);
     mflex.appendChild(el(gauge(R.metaPct, {
-      center: F.pct0(R.metaPct), sub: 'cumplido', size: 240, stroke: 30,
+      center: F.pct0(R.metaPct), sub: 'cumplido', size: 190, stroke: 26,
       color: 'var(--s-ahorro)', trackColor: 'var(--grid)', aria: 'meta anual de ahorro',
     })));
     const mleg = el(`<div class="legend"></div>`);
@@ -200,6 +207,14 @@
     mleg.appendChild(el(`<div class="li"><span class="sw" style="background:var(--grid)"></span><span class="name">Restante</span><span class="lv">${F.cop(R.metaRestante)}</span></div>`));
     mleg.appendChild(el(`<div class="li"><span class="sw" style="background:transparent;border:1px solid var(--border)"></span><span class="name">Meta anual</span><span class="lv">${F.cop(R.metaAnual)}</span></div>`));
     mflex.appendChild(mleg);
+    // Prima extralegal (imagen del Excel) al lado de la meta
+    const tienePrima = !!R.primaExtraLabel;
+    const primaExtra = el(`<div class="prima-extra">
+      <img src="${IMG}${tienePrima ? 'image7.png' : 'image8.png'}" alt="prima extralegal">
+      <div class="pe-label">${tienePrima ? R.primaExtraLabel : 'Prima extralegal'}</div>
+      <div class="pe-value">${tienePrima ? F.cop(R.primaExtraValor) : 'Sin prima este mes'}</div>
+    </div>`);
+    mflex.appendChild(primaExtra);
     meta.appendChild(mflex);
 
     // -- Prima del semestre
