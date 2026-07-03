@@ -184,6 +184,27 @@ select:focus, .btn:focus, input:focus { outline: 2px solid var(--accent); outlin
 .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
 footer { text-align: center; color: var(--muted); font-size: 12px; padding: 22px 0; }
 
+/* ---------- Compactar encabezado en móvil ---------- */
+@media (max-width: 640px) {
+  .wrap { padding: 12px; }
+  .topbar { padding: 9px 11px; gap: 7px 8px; top: 6px; border-radius: 12px; }
+  /* 2 filas: [marca … 💾 🌙 🚪] / [Resumen|Editar   Mes ▾] */
+  .spacer { display: none; }
+  .brand { font-size: 15px; gap: 8px; flex: 1 1 auto; order: 0; }
+  .brand .dot { width: 8px; height: 8px; }
+  #saveBtn { order: 1; } #themeBtn { order: 2; } #logoutBtn { order: 3; }
+  .viewnav { order: 5; padding: 2px; gap: 4px; }
+  .month-select { order: 6; }
+  .btn.nav { padding: 7px 12px; font-size: 12.5px; }
+  .month-select label { display: none; }          /* ocultar "Mes:" */
+  select { padding: 8px 9px; }
+  /* botones solo con ícono */
+  #saveBtn .lbl, #themeBtn .lbl, #logoutBtn .lbl { display: none; }
+  #saveBtn, #logoutBtn { padding: 8px 11px; }
+  .theme-toggle { padding: 0 11px; height: 36px; }
+  .banner { padding: 8px 12px; font-size: 12.5px; }
+}
+
 /* ---------- Puerta de acceso ---------- */
 .gate { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px;
   background: linear-gradient(160deg, var(--page), color-mix(in srgb, var(--accent) 10%, var(--page))); z-index: 100; overflow: auto; }

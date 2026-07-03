@@ -436,7 +436,7 @@
     const themeBtn = document.getElementById('themeBtn');
     function setTheme(t) {
       document.documentElement.setAttribute('data-theme', t);
-      themeBtn.innerHTML = t === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+      themeBtn.innerHTML = t === 'dark' ? '☀️ <span class="lbl">Claro</span>' : '🌙 <span class="lbl">Oscuro</span>';
     }
     setTheme('light');
     themeBtn.addEventListener('click', () => {
