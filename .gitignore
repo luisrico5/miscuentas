@@ -1,0 +1,13 @@
+# NO subir datos personales al repositorio (GitHub queda SIN información)
+assets/sample_data.js
+seed_data.js
+import.html
+
+# Utilidades locales
+node_modules/
+package.json
+package-lock.json
+*.xltm
+*.xlsm
+_dump_*.txt
+_dump_*.json

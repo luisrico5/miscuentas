@@ -1,0 +1,205 @@
+/* styles.css — Dashboard de Extras. Paleta fiel al Excel (estado inicial); dark mode por botón. */
+:root, :root[data-theme="light"] {
+  --page: #f3f5f9;        /* fondo gris-azulado del Excel */
+  --card: #ffffff;
+  --surface-1: #ffffff;
+  --text-1: #0b1f4d;      /* azul marino (títulos/valores) */
+  --text-2: #45537a;
+  --muted: #8a93a5;
+  --grid: #dde3ec;
+  --border: rgba(11, 31, 77, 0.12);
+  --accent: #0070c0;      /* azul Excel */
+  --gold: #ffc000;
+  --up: #00b050;          /* verde ▲ */
+  --down: #c00000;        /* rojo ▼ */
+  --flat: #ffc000;        /* naranja/dorado ▬ */
+  --good: #00b050;
+  --warning: #ffc000;
+  --critical: #ff0000;
+  /* dona: colores del Excel */
+  --s-gastos: #0070c0; --s-ahorro: #00b050; --s-flujo: #ffc000; --s-deuda: #ff0000;
+  --shadow: 0 1px 2px rgba(11,31,77,.05), 0 4px 16px rgba(11,31,77,.07);
+  --radius: 14px;
+  color-scheme: light;
+  font-synthesis: none;
+}
+:root[data-theme="dark"] {
+  --page: #0d1017; --card: #161b26; --surface-1: #1b212e;
+  --text-1: #eaf0fb; --text-2: #b3bed6; --muted: #7e879b;
+  --grid: #2a3243; --border: rgba(255,255,255,0.10);
+  --accent: #4aa3e8; --gold: #ffca2c;
+  --up: #22c55e; --down: #ef5350; --flat: #ffca2c;
+  --good: #22c55e; --warning: #ffca2c; --critical: #ef5350;
+  --s-gastos: #4aa3e8; --s-ahorro: #22c55e; --s-flujo: #ffca2c; --s-deuda: #ef5350;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }  /* el atributo hidden debe ocultar SIEMPRE (gana a display:grid/flex) */
+body {
+  margin: 0; background: var(--page); color: var(--text-1);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1560px; margin: 0 auto; padding: 18px 24px; }
+
+/* ---------- Header ---------- */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  padding: 14px 18px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px;
+  position: sticky; top: 8px; z-index: 20;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; color: var(--text-1); }
+.brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 25%, transparent); }
+.spacer { flex: 1 1 auto; }
+.month-select { display: flex; align-items: center; gap: 8px; }
+.month-select label { color: var(--text-2); font-size: 13px; }
+select, .btn {
+  font: inherit; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1); cursor: pointer;
+}
+select:focus, .btn:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.theme-toggle { background: transparent; border: 1px solid var(--border); height: 38px; padding: 0 12px; border-radius: 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: var(--text-1); }
+.viewnav { display: inline-flex; gap: 6px; background: var(--page); padding: 3px; border-radius: 12px; border: 1px solid var(--border); }
+.btn.nav { border: 0; background: transparent; padding: 7px 14px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: var(--text-2); }
+.btn.nav.active { background: var(--card); color: var(--text-1); box-shadow: var(--shadow); }
+
+/* Vista mensual editable — .row.m-row para ganarle a la regla base .row (grid) */
+.row.m-row { display: flex; align-items: center; gap: 10px; }
+.row.m-row .name { flex: 1 1 auto; min-width: 0; }
+.row.m-row .chk { flex: 0 0 auto; width: 17px; height: 17px; accent-color: var(--accent); }
+.row.m-row .m-input { flex: 0 0 auto; width: 140px; text-align: right; font-variant-numeric: tabular-nums;
+  padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1); }
+.row.m-row .amt { flex: 0 0 auto; min-width: 96px; text-align: right; }
+.row.m-row .amt.calc { color: var(--muted); font-weight: 600; }
+.row.m-row.done .name { text-decoration: line-through; color: var(--muted); }
+.row.m-row .m-label { flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1); font: inherit; }
+.row.m-row.done .m-label { text-decoration: line-through; color: var(--muted); }
+.row.m-row .del { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--critical); font-size: 17px; line-height: 1; cursor: pointer; }
+.row.m-row .del:hover { background: color-mix(in srgb, var(--critical) 12%, transparent); }
+.row.m-row .stepper { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
+.stepbtn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1);
+  color: var(--text-1); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
+.stepbtn:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.stepval { min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
+.btn.add-concept { margin-top: 8px; width: 100%; background: transparent; border: 1px dashed var(--border);
+  color: var(--accent); font-weight: 600; padding: 8px; border-radius: 10px; }
+.btn.add-concept:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+.banner {
+  background: color-mix(in srgb, var(--gold) 15%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  color: var(--text-1); padding: 10px 14px; border-radius: 12px; margin-bottom: 14px; font-size: 13.5px;
+}
+
+/* ---------- Status pills ---------- */
+.pills { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.pill {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
+}
+.pill .ico { font-size: 18px; }
+.pill.good { border-left: 5px solid var(--good); }
+.pill.warn { border-left: 5px solid var(--warning); }
+.pill.bad  { border-left: 5px solid var(--critical); }
+.pill .txt { font-size: 13.5px; }
+
+/* ---------- Cards & grid ---------- */
+.grid { display: grid; gap: 14px; align-items: start; }  /* start = cada tarjeta mide lo que ocupa (sin estirar) */
+.cols-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.cols-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+/* En pantallas anchas: KPIs a 4 columnas fijas y secciones a 2 amplias */
+@media (min-width: 1100px) {
+  .cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .cols-2 { grid-template-columns: repeat(2, 1fr); }
+}
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 18px;
+}
+/* Layout de dos columnas apiladas (izquierda / derecha) */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+/* Fila de horas extras en UNA línea: [nombre + leyenda a la izquierda] … [input + total a la derecha].
+   Uso .row.he-row (especificidad 0,2,0) para ganarle a la regla base .row (grid) que va después. */
+.row.he-row { display: flex; align-items: center; gap: 8px; }
+.row.he-row .name { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row.he-row .qty { flex: 0 0 auto; white-space: nowrap; color: var(--muted); }
+.row.he-row .qty-input { flex: 0 0 auto; margin-left: auto; }  /* empuja input + total a la derecha */
+.row.he-row .amt { flex: 0 0 auto; min-width: 84px; text-align: right; }
+@media (max-width: 560px) { .row.he-row .qty { display: none; } }
+.card h3 { margin: 0 0 12px; font-size: 12.5px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+
+/* KPI */
+.kpi .label { font-size: 12.5px; color: var(--muted); }
+.kpi .value { font-size: 27px; font-weight: 800; margin: 4px 0 2px; letter-spacing: -.01em; color: var(--text-1); }
+.kpi .sub { font-size: 13px; color: var(--text-2); }
+.delta { font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
+.delta.up { color: var(--up); } .delta.down { color: var(--down); } .delta.flat { color: var(--flat); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.badge.ok { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.badge.no { background: color-mix(in srgb, var(--critical) 16%, transparent); color: var(--critical); }
+
+/* ---------- Filas con databar ---------- */
+.rows { display: flex; flex-direction: column; gap: 2px; }
+.row {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center;
+  padding: 4px 0; border-bottom: 1px solid var(--grid);
+}
+.row:last-child { border-bottom: 0; }
+.row .name { font-size: 13px; color: var(--text-1); }
+.row .qty { font-size: 12px; color: var(--muted); }
+.row .amt { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; white-space: nowrap; }
+.bar-wrap { grid-column: 1 / -1; height: 4px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-top: 1px; }
+.bar { height: 100%; border-radius: 4px; background: var(--accent); }
+.bar.debt { background: var(--s-deuda); }
+.qty-input {
+  width: 72px; text-align: right; font-variant-numeric: tabular-nums;
+  padding: 4px 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1);
+}
+/* Input bloqueado (la cantidad viene de la hoja del mes) */
+.qty-input[readonly] {
+  background: var(--page); color: var(--text-2); border-style: dashed;
+  cursor: not-allowed; opacity: .85;
+}
+.total-row { display: flex; justify-content: space-between; padding-top: 10px; margin-top: 6px; border-top: 2px solid var(--grid); font-weight: 800; }
+
+/* ---------- Charts ---------- */
+.chart-flex { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.legend { display: flex; flex-direction: column; gap: 7px; font-size: 13px; min-width: 190px; flex: 1 1 190px; }
+.legend .li { display: flex; align-items: center; gap: 8px; }
+.legend .sw { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
+.legend .name { color: var(--text-2); }
+.legend .lv { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-1); font-weight: 700; }
+.donut-center { font-weight: 800; }
+
+.editrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.editrow input { width: 130px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1); }
+.muted { color: var(--muted); font-size: 12.5px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+footer { text-align: center; color: var(--muted); font-size: 12px; padding: 22px 0; }
+
+/* ---------- Puerta de acceso ---------- */
+.gate { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px;
+  background: linear-gradient(160deg, var(--page), color-mix(in srgb, var(--accent) 10%, var(--page))); z-index: 100; overflow: auto; }
+.gate-card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; box-shadow: var(--shadow); padding: 24px; }
+.gate-card .muted { margin: 0 0 14px; }
+.fld { display: block; margin: 10px 0; }
+.fld span { display: block; font-size: 12.5px; color: var(--text-2); margin-bottom: 4px; }
+.fld input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-1); font: inherit; }
+.cfg { margin: 6px 0 12px; }
+.cfg summary { cursor: pointer; font-size: 13px; color: var(--text-2); font-weight: 600; }
+.cfg textarea { width: 100%; margin-top: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-1); font-family: ui-monospace, "Cascadia Code", monospace; font-size: 12px; resize: vertical; }
+.btn-primary { background: var(--accent); color: #fff; border-color: transparent; font-weight: 700; width: 100%; padding: 11px; margin-top: 6px; }
+.btn.linkish { background: transparent; border: 0; color: var(--muted); font-size: 12.5px; width: 100%; margin-top: 12px; text-decoration: underline; }
+.gate-msg { min-height: 18px; margin-top: 10px; font-size: 13px; text-align: center; }
+.gate-msg.err { color: var(--critical); }
+.gate code { font-family: ui-monospace, monospace; font-size: 12px; background: var(--page); padding: 1px 5px; border-radius: 5px; }

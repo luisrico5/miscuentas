@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard de Extras</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!-- ===== Puerta de acceso (todo oculto hasta autenticarse) ===== -->
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <div class="brand" style="font-size:20px;margin-bottom:4px"><span class="dot"></span> Dashboard de Extras</div>
+      <p class="muted">Tus datos están cifrados. Inicia sesión para verlos y editarlos.</p>
+
+      <details class="cfg" id="cfgDetails">
+        <summary>Configuración de Firebase</summary>
+        <p class="muted" style="margin:.4rem 0">Pega aquí tu objeto <code>firebaseConfig</code> (se guarda solo en este dispositivo).</p>
+        <textarea id="fbConfig" rows="8" spellcheck="false" placeholder='{
+  "apiKey": "...",
+  "authDomain": "tu-proyecto.firebaseapp.com",
+  "projectId": "tu-proyecto",
+  "appId": "..."
+}'></textarea>
+      </details>
+
+      <label class="fld"><span>Correo</span><input id="email" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com"></label>
+      <label class="fld"><span>Contraseña</span><input id="password" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+
+      <button class="btn btn-primary" id="loginBtn">Entrar</button>
+      <div id="gateMsg" class="gate-msg" role="alert"></div>
+      <button class="btn linkish" id="demoBtn" type="button">Ver demo local (datos de muestra, sin guardar)</button>
+    </div>
+  </div>
+
+  <!-- ===== App (oculta hasta login) ===== -->
+  <div class="wrap" id="appWrap" hidden>
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> Dashboard de Extras</div>
+      <div class="viewnav">
+        <button class="btn nav active" id="viewResumenBtn">📊 Resumen</button>
+        <button class="btn nav" id="viewMesBtn">✏️ Editar mes</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="month-select">
+        <label for="monthSel">Mes:</label>
+        <select id="monthSel"></select>
+      </div>
+      <button class="btn" id="saveBtn" hidden>💾 Guardar</button>
+      <button class="theme-toggle" id="themeBtn" title="Cambiar tema" aria-label="Cambiar tema">🌙 Oscuro</button>
+      <button class="btn" id="logoutBtn" hidden>Salir</button>
+    </div>
+
+    <div class="banner" id="modeBanner"></div>
+
+    <div id="app"></div>
+
+    <footer>Dashboard de Extras · réplica del RESUMEN · datos cifrados de extremo a extremo.</footer>
+  </div>
+
+  <script src="assets/format.js"></script>
+  <script src="assets/template.js"></script>
+  <script src="assets/sample_data.js" onerror="window.__noSeed=true"></script>
+  <script src="assets/calc.js"></script>
+  <script src="assets/dashboard.js"></script>
+  <script src="assets/crypto.js"></script>
+  <script src="assets/firebase.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
