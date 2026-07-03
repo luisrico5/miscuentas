@@ -50,6 +50,11 @@ Sin datos remotos: usa `sample_data` (local) o `TEMPLATE` (GitHub). Guardar = `D
 - Salud/Pensión = (C3+F14)×0.04; aporte sindical = C3×0.01; pólizas por defecto 15098 (editable).
 - Prima: `D21 = (Σ D20 del semestre + X)/6`; `D22 = D21/2 − deducción`. X y deducción en `params`.
 - Descuentos: total completo alimenta el Resumen; las casillas ✔ dan el **pendiente** (total − marcados).
+- Prima extralegal (C7/C8) solo se muestra en el **2º semestre** (índice de mes ≥ 6), debajo de "Prima del semestre", junto a la Meta anual.
+
+## Imágenes / íconos
+
+`assets/img/image{1,2,4,5,7,...}.png` se extrajeron del Excel (`xl/media`) y se mapearon por nombre de shape (Imagen 7=ingreso, 11=ahorro, 49=flujo, 52=deuda, 1028=prima extralegal). Son genéricos (sin datos), SÍ van al repo. Cada KPI del Resumen muestra su ícono + una leyenda de estado con color por semáforo. Los íconos de KPI (`.kpi-ico`) miden 32px en móvil y **38px en computador** (`@media min-width:641px`).
 
 ## Ejecutar y probar
 

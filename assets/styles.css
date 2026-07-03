@@ -149,6 +149,8 @@ select:focus, .btn:focus, input:focus { outline: 2px solid var(--accent); outlin
 /* Ícono del Excel en cada KPI + leyenda de estado debajo */
 .kpi { position: relative; }
 .kpi-ico { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; object-fit: contain; opacity: .95; }
+/* En computador los íconos de KPI son 20% más grandes (móvil se mantiene en 32px) */
+@media (min-width: 641px) { .kpi-ico { width: 38px; height: 38px; } }
 .kpi .label { padding-right: 40px; }
 .status { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--grid);
   font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 7px; line-height: 1.25; }

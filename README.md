@@ -16,9 +16,13 @@ datos**. La información vive **cifrada** en **Firebase** y solo aparece tras in
 
 - **Pantalla de acceso**: nadie ve nada sin autenticarse. Se pega el `firebaseConfig` + correo +
   contraseña. Reutilizable con otros proyectos de Firebase.
+- **Selector de mes y año**: meses ENE–DIC y años **2026, 2027, 2028** (cada año guarda sus datos
+  aparte; 2027/2028 arrancan en blanco). Encabezado compacto en móvil (2 filas, botones con ícono).
 - **Vista "Resumen"** (solo lectura): réplica del RESUMEN del Excel para el mes seleccionado.
-  KPIs, semáforos, mensajes automáticos, dona de distribución, medio círculo de meta de ahorro,
-  deudas y prima. Colores fieles al Excel + modo oscuro.
+  KPIs con los **íconos del Excel** y su **leyenda de estado debajo** (buen camino / ahorro saludable /
+  flujo positivo, y endeudamiento en la tarjeta de Deudas), dona de distribución, medio círculo de
+  meta de ahorro, y **prima del semestre** (con **prima extralegal** debajo, solo en 2º semestre).
+  Colores fieles al Excel + modo oscuro. Los íconos de KPI son 20% más grandes en computador.
 - **Vista "Editar mes"** (editable, recalcula en cascada):
   - **Salario base** editable (con "aplicar a todos los meses").
   - **Horas extras**: cantidades editables; el valor/hora y totales se calculan (divisor 210).
@@ -66,7 +70,8 @@ Los datos se guardan en Firestore en `dashboards/{tu-uid}` como `{ payload: <cif
 | `assets/crypto.js` | Cifrado/descifrado AES-GCM |
 | `assets/firebase.js` | Init de Firebase + Auth + Firestore (SDK modular por CDN) |
 | `assets/app.js` | Orquestador: login, descifrado, arranque, guardado |
-| `assets/styles.css` | Estilos (paleta del Excel + modo oscuro) |
+| `assets/styles.css` | Estilos (paleta del Excel + modo oscuro + responsive) |
+| `assets/img/` | Íconos del Excel (semáforos/prima) extraídos del archivo original. Genéricos, sin datos. |
 | `firestore.rules` | Reglas de seguridad de Firestore |
 
 ---
