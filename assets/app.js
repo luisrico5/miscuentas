@@ -104,12 +104,18 @@
   }
 
   function startWith(data, loggedIn) {
-    window.DASH.start({
-      wb: { monthsOrder: data.monthsOrder || (window.WB && window.WB.monthsOrder) || (window.TEMPLATE && window.TEMPLATE.monthsOrder), months: data.months },
-      params: data.params || {},
-      overrides: data.overrides || {},
-      extra: data.extra || {},
-    });
+    if (data && data.byYear) {
+      // formato multi-año (nuevo)
+      window.DASH.start({ byYear: data.byYear, overrides: data.overrides || {}, extra: data.extra || {}, paramsByYear: data.paramsByYear || {} });
+    } else {
+      // formato antiguo (un solo año = 2026)
+      window.DASH.start({
+        wb: { monthsOrder: data.monthsOrder || (window.WB && window.WB.monthsOrder) || (window.TEMPLATE && window.TEMPLATE.monthsOrder), months: data.months },
+        params: data.params || {},
+        overrides: data.overrides || {},
+        extra: data.extra || {},
+      });
+    }
   }
 
   function traducirError(e) {

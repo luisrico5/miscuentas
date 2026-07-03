@@ -1,14 +1,27 @@
 // dashboard.js — Render del RESUMEN + interacción + gráficos (SVG)
 (function () {
-  let WB = null; // se asigna en start()
-  const state = { month: 'JUL 26', view: 'resumen', base: null, params: {}, overrides: {}, extra: {}, onSave: null, dirty: false };
+  const YEARS = ['2026', '2027', '2028'];
+  const YY = { '2026': '26', '2027': '27', '2028': '28' };
+  let WB = null; // datos FUENTE del año activo (state.byYear[state.year])
+  const state = {
+    year: '2026', month: 'JUL 26', view: 'resumen', base: null,
+    params: {}, overrides: {}, extra: {}, byYear: {}, paramsByYear: {}, onSave: null, dirty: false,
+  };
   const cell = (m, c) => (state.wb.months[m] && state.wb.months[m][c]) || null;
   const cval = (m, c) => { const x = cell(m, c); return x ? x.v : null; };
   const isLiteral = (m, c) => { const x = cell(m, c); return !!x && !x.f; };
 
-  // ---- overrides de edición: overrides[month][coord] = value ----
+  // Genera un año EN BLANCO a partir de la plantilla, remapeando el sufijo de año (ENE 26 -> ENE 28)
+  function blankYear(yy) {
+    const t = window.TEMPLATE;
+    const remap = (k) => k.replace(/\s*\d{2}$/, '') + ' ' + yy;
+    const months = {};
+    for (const k in t.months) months[remap(k)] = JSON.parse(JSON.stringify(t.months[k]));
+    return { monthsOrder: t.monthsOrder.map(remap), months };
+  }
+
+  // ---- overrides de edición: overrides[month][coord] = value (la clave del mes incluye el año) ----
   function applyOverrides() {
-    // parte de una copia de WB y aplica valores editados por el usuario
     const clone = { monthsOrder: WB.monthsOrder, months: {} };
     for (const m of WB.monthsOrder) {
       clone.months[m] = {};
@@ -17,6 +30,28 @@
       if (ov) for (const c in ov) clone.months[m][c] = Object.assign({}, clone.months[m][c] || {}, { v: ov[c], f: null });
     }
     return clone;
+  }
+
+  function setYear(y) {
+    const idx = WB ? Math.max(0, WB.monthsOrder.indexOf(state.month)) : 6;
+    state.year = y;
+    WB = state.byYear[y];
+    if (!state.paramsByYear[y]) state.paramsByYear[y] = {};
+    state.params = state.paramsByYear[y];
+    state.month = WB.monthsOrder[idx] || WB.monthsOrder[0];
+    populateMonths();
+  }
+
+  function populateMonths() {
+    const sel = document.getElementById('monthSel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    WB.monthsOrder.forEach((m) => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m.replace(/\s*\d{2}$/, '');  // muestra solo el mes
+      sel.appendChild(o);
+    });
+    sel.value = state.month;
   }
 
   function recompute() {
@@ -89,6 +124,8 @@
   // ---------- Render (dispatcher por vista) ----------
   function render() {
     document.getElementById('monthSel').value = state.month;
+    const ySel = document.getElementById('yearSel');
+    if (ySel) ySel.value = state.year;
     const btnR = document.getElementById('viewResumenBtn');
     const btnM = document.getElementById('viewMesBtn');
     if (btnR && btnM) {
@@ -207,29 +244,28 @@
     mleg.appendChild(el(`<div class="li"><span class="sw" style="background:var(--grid)"></span><span class="name">Restante</span><span class="lv">${F.cop(R.metaRestante)}</span></div>`));
     mleg.appendChild(el(`<div class="li"><span class="sw" style="background:transparent;border:1px solid var(--border)"></span><span class="name">Meta anual</span><span class="lv">${F.cop(R.metaAnual)}</span></div>`));
     mflex.appendChild(mleg);
-    // Prima extralegal (imagen del Excel) al lado de la meta
-    const tienePrima = !!R.primaExtraLabel;
-    const primaExtra = el(`<div class="prima-extra">
-      <img src="${IMG}${tienePrima ? 'image7.png' : 'image8.png'}" alt="prima extralegal">
-      <div class="pe-label">${tienePrima ? R.primaExtraLabel : 'Prima extralegal'}</div>
-      <div class="pe-value">${tienePrima ? F.cop(R.primaExtraValor) : 'Sin prima este mes'}</div>
+    // Bloque de prima al lado de la meta: PRIMA DEL SEMESTRE arriba, y PRIMA EXTRALEGAL debajo (solo 2º semestre)
+    const idxMes = state.wb.monthsOrder.indexOf(state.month);
+    const esSem2 = idxMes >= 6;
+    const mostrarExtra = esSem2 && !!R.primaExtraLabel;
+    const primaBlock = el(`<div class="prima-extra">
+      <div class="pe-label">Prima del semestre</div>
+      <div class="pe-value">${F.cop(R.primaValor)}</div>
+      ${mostrarExtra ? `
+        <div class="pe-sep"></div>
+        <img src="${IMG}image7.png" alt="prima extralegal">
+        <div class="pe-label">${R.primaExtraLabel}</div>
+        <div class="pe-value">${F.cop(R.primaExtraValor)}</div>` : ''}
     </div>`);
-    mflex.appendChild(primaExtra);
+    mflex.appendChild(primaBlock);
     meta.appendChild(mflex);
 
-    // -- Prima del semestre
-    const prima = el(`<div class="card"><h3>Prima del semestre</h3>
-      <div class="kpi"><div class="label">${R.primaLabel}</div><div class="value">${F.cop(R.primaValor)}</div>
-      ${R.primaExtraLabel ? `<div class="sub">${R.primaExtraLabel}: ${F.cop(R.primaExtraValor)}</div>` : ''}</div>
-      <div class="note">Prima = (suma de los 6 totales mensuales del semestre + valor X) ÷ 6.</div>
-    </div>`);
-
     // ---- Ensamblado en dos columnas ----
-    // Izquierda: Horas extras, Deudas, Prima · Derecha: Distribución, Meta anual
+    // Izquierda: Horas extras, Deudas · Derecha: Distribución, Meta anual (+ prima)
     const layout = el(`<div class="two-col"></div>`);
     const colL = el(`<div class="col"></div>`);
     const colR = el(`<div class="col"></div>`);
-    colL.appendChild(he); colL.appendChild(deu); colL.appendChild(prima);
+    colL.appendChild(he); colL.appendChild(deu);
     colR.appendChild(dist); colR.appendChild(meta);
     layout.appendChild(colL); layout.appendChild(colR);
     app.appendChild(layout);
@@ -436,12 +472,15 @@
   let booted = false;
   function boot() {
     if (booted) return; booted = true;
-    // selector de mes
-    const sel = document.getElementById('monthSel');
-    WB.monthsOrder.forEach((m) => { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o); });
-    if (!WB.monthsOrder.includes(state.month)) state.month = WB.monthsOrder[0];
-    sel.value = state.month;
-    sel.addEventListener('change', () => { state.month = sel.value; render(); });
+    // selector de AÑO
+    const ySel = document.getElementById('yearSel');
+    YEARS.forEach((y) => { const o = document.createElement('option'); o.value = y; o.textContent = y; ySel.appendChild(o); });
+    ySel.value = state.year;
+    ySel.addEventListener('change', () => { setYear(ySel.value); recompute(); });
+
+    // selector de MES (poblado según el año)
+    populateMonths();
+    document.getElementById('monthSel').addEventListener('change', (e) => { state.month = e.target.value; render(); });
 
     // navegación de vistas
     document.getElementById('viewResumenBtn').addEventListener('click', () => { state.view = 'resumen'; render(); });
@@ -460,23 +499,30 @@
     });
   }
 
-  // API pública: arranca (o reinicia) el dashboard con un workbook dado.
-  // opts: { wb, params, month, onSave }  — onSave recibe el estado a persistir (cifrado por la capa Firebase).
+  // API pública: arranca el dashboard. Acepta formato multi-año {byYear, overrides, extra, paramsByYear}
+  // o el formato antiguo {wb, params, overrides, extra} (se toma como año 2026).
   function start(opts) {
     opts = opts || {};
-    WB = opts.wb || window.WB;
-    state.params = opts.params || {};
+    state.byYear = {};
+    YEARS.forEach((y) => {
+      if (opts.byYear && opts.byYear[y]) state.byYear[y] = opts.byYear[y];
+      else if (y === '2026' && opts.wb) state.byYear[y] = { monthsOrder: opts.wb.monthsOrder, months: opts.wb.months };
+      else state.byYear[y] = blankYear(YY[y]);
+    });
     state.overrides = opts.overrides || {};
     state.extra = opts.extra || {};
-    state.onSave = opts.onSave || null;
-    if (opts.month) state.month = opts.month;
+    state.paramsByYear = opts.paramsByYear || (opts.params ? { '2026': opts.params } : {});
+    state.month = 'JUL 26';
+    setYear('2026');
+    // mes por defecto: JUL del año activo
+    state.month = WB.monthsOrder.find((m) => m.indexOf('JUL') === 0) || WB.monthsOrder[0];
     boot();
     recompute();
   }
 
-  // Devuelve el estado a guardar (para cifrar y subir a Firebase)
+  // Devuelve el estado a guardar (para cifrar y subir a Firebase) — multi-año
   function snapshot() {
-    return { months: WB.months, monthsOrder: WB.monthsOrder, params: state.params, overrides: state.overrides, extra: state.extra };
+    return { version: 2, byYear: state.byYear, overrides: state.overrides, extra: state.extra, paramsByYear: state.paramsByYear };
   }
 
   window.DASH = { start, snapshot };

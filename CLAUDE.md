@@ -40,7 +40,8 @@ Sin datos remotos: usa `sample_data` (local) o `TEMPLATE` (GitHub). Guardar = `D
   clona `wb` y aplica overrides antes de recalcular.
 - **Conceptos extra** (botón +) = `state.extra[MES].d30 / .d15 = [{label,value,checked}]`.
 - Pseudo-celda `I19q` = cantidad de "solidaridad sindical" (valor = C3/30 × I19q).
-- `snapshot()` persiste `{ months, monthsOrder, params, overrides, extra }` cifrado.
+- **Multi-año**: `state.byYear[año] = {monthsOrder, months}` (años 2026-2028; los que faltan se generan en blanco con `blankYear(yy)` remapeando el sufijo, ej. "ENE 26"→"ENE 28"). `state.year` es el activo; `WB` apunta a `byYear[year]`. `paramsByYear[año]` guarda semX/deducción por año. Las claves de mes incluyen el año, así que `overrides`/`extra` quedan aisladas por año.
+- `snapshot()` persiste `{ version:2, byYear, overrides, extra, paramsByYear }` cifrado. Compatibilidad: el formato antiguo `{months, monthsOrder, params, overrides, extra}` se carga como año 2026.
 
 ## Reglas de negocio (del Excel, con correcciones autorizadas)
 
