@@ -274,13 +274,26 @@
     mflex.appendChild(primaBlock);
     meta.appendChild(mflex);
 
+    // -- A favor de la quincena vigente (según el día de hoy): < 15 → pago del 15; ≥ 15 → pago del 30
+    const b = state.base[state.month];
+    const hoy = new Date().getDate();
+    const usarSegunda = hoy >= 15;
+    const aFavor = usarSegunda ? b.E17 : b.E16;
+    const quincenaTxt = usarSegunda ? 'Pago del 30 (2ª quincena)' : 'Pago del 15 (1ª quincena)';
+    const afavorCard = el(`<div class="card afavor">
+      <img class="kpi-ico" src="${IMG}image1.png" alt="">
+      <div class="label">A favor · quincena vigente</div>
+      <div class="value">${F.cop(aFavor)}</div>
+      <div class="sub">${quincenaTxt} · hoy es día ${hoy}</div>
+    </div>`);
+
     // ---- Ensamblado en dos columnas ----
-    // Izquierda: Horas extras, Deudas · Derecha: Distribución, Meta anual (+ prima)
+    // Izquierda: Horas extras, Deudas · Derecha: Distribución, Meta anual (+ prima), A favor
     const layout = el(`<div class="two-col"></div>`);
     const colL = el(`<div class="col"></div>`);
     const colR = el(`<div class="col"></div>`);
     colL.appendChild(he); colL.appendChild(deu);
-    colR.appendChild(dist); colR.appendChild(meta);
+    colR.appendChild(dist); colR.appendChild(meta); colR.appendChild(afavorCard);
     layout.appendChild(colL); layout.appendChild(colR);
     app.appendChild(layout);
   }

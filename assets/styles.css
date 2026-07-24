@@ -87,6 +87,12 @@ select:focus, .btn:focus, input:focus { outline: 2px solid var(--accent); outlin
 .pct-wrap { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; color: var(--muted); font-size: 12px; }
 .pct-input { width: 62px; text-align: right; padding: 3px 6px; border-radius: 7px; border: 1px solid var(--border);
   background: var(--surface-1); color: var(--text-1); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* Tarjeta "A favor" de la quincena vigente */
+.afavor { position: relative; border-left: 4px solid var(--good); }
+.afavor .label { font-size: 12.5px; color: var(--muted); padding-right: 44px; }
+.afavor .value { font-size: 26px; font-weight: 800; color: var(--good); margin: 4px 0 2px; letter-spacing: -.01em; }
+.afavor .sub { font-size: 12.5px; color: var(--text-2); }
 .row.m-row .m-label { flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1); font: inherit; }
 .row.m-row.done .m-label { text-decoration: line-through; color: var(--muted); }
