@@ -315,6 +315,23 @@
     he.appendChild(el(`<div class="total-row"><span>Total horas extras</span><span>${F.cop(b.F14)}</span></div>`));
     colL.appendChild(he);
 
+    // --- Quincenas: pago del 15 y del 30 (fórmula sobre el salario) ---
+    const quin = el(`<div class="card"><h3>Quincenas — pago del 15 y del 30</h3></div>`);
+    const qRow = (label, valor, tipo) => `<div class="q-row ${tipo || ''}"><div class="name">${label}</div><div class="amt">${F.cop(valor)}</div></div>`;
+    quin.appendChild(el(`<div class="rows">
+      <div class="q-head">Pago del 15 <span class="qty">(26,67% del salario)</span></div>
+      ${qRow('Valor quincena', b.C16)}
+      ${qRow('− Descuentos del 15', b.D16)}
+      ${qRow('= A favor', b.E16, 'fav')}
+      <div class="q-head" style="margin-top:8px">Pago del 30 <span class="qty">(73,3% del salario + horas extras)</span></div>
+      ${qRow('Valor quincena', b.C17)}
+      ${qRow('+ Horas extras', b.F14)}
+      ${qRow('− Descuentos del 30', b.D17)}
+      ${qRow('= A favor', b.E17, 'fav')}
+    </div>`));
+    quin.appendChild(el(`<div class="note">Calculado a partir del salario y los descuentos. "A favor" = lo que te queda cada quincena.</div>`));
+    colL.appendChild(quin);
+
     // --- Ahorro del mes ---
     const ah = el(`<div class="card"><h3>Ahorro del mes</h3></div>`);
     const ahRows = el(`<div class="rows"></div>`);

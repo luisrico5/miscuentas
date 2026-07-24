@@ -1,5 +1,5 @@
 rules_version = '2';
-// Reglas de seguridad de Firestore para el Dashboard de Extras.
+// Reglas de seguridad de Firestore para el Dashboard de Extras con valores.
 // Cada usuario sólo puede leer/escribir SU documento (id = su uid). Nadie más.
 // Aunque alguien accediera, el contenido está cifrado (AES-GCM) y es ilegible sin la contraseña.
 service cloud.firestore {

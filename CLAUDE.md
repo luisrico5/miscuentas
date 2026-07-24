@@ -47,6 +47,7 @@ Sin datos remotos: usa `sample_data` (local) o `TEMPLATE` (GitHub). Guardar = `D
 
 - Valor/hora: `C3/210 × factor` (divisor **210** siempre; /220 y /235 eran errores).
 - `D20` (ingreso mes) = C3 + Σ(F5:F13); `I28` flujo = E16 + E17.
+- Quincenas (solo lectura en Editar mes): pago del 15 = C16 (C3×0.2667) − D16 (desc. 15) = E16; pago del 30 = C17 (C3×0.733) + F14 (horas extras) − D17 (desc. 30) = E17.
 - Salud/Pensión = (C3+F14)×0.04; aporte sindical = C3×0.01; pólizas por defecto 15098 (editable).
 - Prima: `D21 = (Σ D20 del semestre + X)/6`; `D22 = D21/2 − deducción`. X y deducción en `params`.
 - Descuentos: total completo alimenta el Resumen; las casillas ✔ dan el **pendiente** (total − marcados).
