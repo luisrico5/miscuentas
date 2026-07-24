@@ -84,6 +84,9 @@ select:focus, .btn:focus, input:focus { outline: 2px solid var(--accent); outlin
 .q-row .amt { font-variant-numeric: tabular-nums; font-weight: 600; }
 .q-row.fav { border-bottom: 0; border-top: 1px solid var(--grid); margin-top: 2px; }
 .q-row.fav .name, .q-row.fav .amt { color: var(--good); font-weight: 800; }
+.pct-wrap { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; color: var(--muted); font-size: 12px; }
+.pct-input { width: 62px; text-align: right; padding: 3px 6px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--surface-1); color: var(--text-1); font-size: 12px; font-variant-numeric: tabular-nums; }
 .row.m-row .m-label { flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--surface-1); color: var(--text-1); font: inherit; }
 .row.m-row.done .m-label { text-decoration: line-through; color: var(--muted); }

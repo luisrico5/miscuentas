@@ -12,6 +12,7 @@
     deduccion: { 1: 1264086, 2: 1202172 }, // deducción de la prima por semestre
     tasaDolar: 3600,                   // Q5 = Q3 + Q4 * tasaDolar
     metaMensualAhorro: 3697884 / 10,   // base de A21 = 3697884/10*12
+    quincena: { 15: 0.266666637785683, 30: 0.733 }, // % del salario por quincena (editables)
   };
 
   // Coeficientes de valor/hora (divisor fijo 210)
@@ -75,11 +76,14 @@
     (ex.d30 || []).forEach((x) => { sumI += num(x.value); });
     (ex.d15 || []).forEach((x) => { sumM += num(x.value); });
 
-    const C16 = C3 * 0.266666637785683;   // pago del 15 (bruto)
+    const q = P.quincena || {};
+    const pct15 = q[15] != null ? q[15] : 0.266666637785683;
+    const pct30 = q[30] != null ? q[30] : 0.733;
+    const C16 = C3 * pct15;               // pago del 15 (bruto) — % editable
     const D16 = sumM;
     const E16 = C16 - D16;                // a favor del 15
 
-    const C17 = C3 * (1 - 0.267);         // pago del 30 (bruto)
+    const C17 = C3 * pct30;               // pago del 30 (bruto) — % editable
     const D17 = sumI;
     const E17 = (C17 + F14) - D17;        // a favor del 30
 

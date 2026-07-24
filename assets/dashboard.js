@@ -82,6 +82,20 @@
     return inp;
   }
 
+  // Input de porcentaje editable de la quincena (period = 15 | 30). Guarda la fracción en params.quincena.
+  function pctInput(period, frac) {
+    const wrap = el(`<span class="pct-wrap"></span>`);
+    const inp = el(`<input class="pct-input" type="number" step="0.01" value="${(frac * 100).toFixed(2)}" aria-label="porcentaje quincena ${period}">`);
+    inp.addEventListener('change', () => {
+      const f = (parseFloat(inp.value) || 0) / 100;
+      state.params.quincena = Object.assign({}, CALC.DEFAULT_PARAMS.quincena, state.params.quincena, { [period]: f });
+      markDirty(); recompute();
+    });
+    wrap.appendChild(inp);
+    wrap.appendChild(document.createTextNode('%'));
+    return wrap;
+  }
+
   function donut(slices, opts) {
     opts = opts || {};
     const size = opts.size || 150, sw = opts.stroke || 24, r = (size - sw) / 2, C = 2 * Math.PI * r;
@@ -315,21 +329,30 @@
     he.appendChild(el(`<div class="total-row"><span>Total horas extras</span><span>${F.cop(b.F14)}</span></div>`));
     colL.appendChild(he);
 
-    // --- Quincenas: pago del 15 y del 30 (fórmula sobre el salario) ---
+    // --- Quincenas: pago del 15 y del 30 (% del salario EDITABLE) ---
     const quin = el(`<div class="card"><h3>Quincenas — pago del 15 y del 30</h3></div>`);
-    const qRow = (label, valor, tipo) => `<div class="q-row ${tipo || ''}"><div class="name">${label}</div><div class="amt">${F.cop(valor)}</div></div>`;
-    quin.appendChild(el(`<div class="rows">
-      <div class="q-head">Pago del 15 <span class="qty">(26,67% del salario)</span></div>
-      ${qRow('Valor quincena', b.C16)}
-      ${qRow('− Descuentos del 15', b.D16)}
-      ${qRow('= A favor', b.E16, 'fav')}
-      <div class="q-head" style="margin-top:8px">Pago del 30 <span class="qty">(73,3% del salario + horas extras)</span></div>
-      ${qRow('Valor quincena', b.C17)}
-      ${qRow('+ Horas extras', b.F14)}
-      ${qRow('− Descuentos del 30', b.D17)}
-      ${qRow('= A favor', b.E17, 'fav')}
-    </div>`));
-    quin.appendChild(el(`<div class="note">Calculado a partir del salario y los descuentos. "A favor" = lo que te queda cada quincena.</div>`));
+    const qrows = el(`<div class="rows"></div>`);
+    const qLine = (label, valor, tipo) => el(`<div class="q-row ${tipo || ''}"><div class="name">${label}</div><div class="amt">${F.cop(valor)}</div></div>`);
+    const qp = state.params.quincena || {};
+    const pct15 = qp[15] != null ? qp[15] : CALC.DEFAULT_PARAMS.quincena[15];
+    const pct30 = qp[30] != null ? qp[30] : CALC.DEFAULT_PARAMS.quincena[30];
+    // Fila "Valor quincena" con el % editable a la izquierda
+    const valorRow = (valor, period, frac) => {
+      const row = el(`<div class="q-row"><div class="name">Valor quincena </div><div class="amt">${F.cop(valor)}</div></div>`);
+      row.querySelector('.name').appendChild(pctInput(period, frac));
+      return row;
+    };
+    qrows.appendChild(el(`<div class="q-head">Pago del 15 <span class="qty">(% del salario)</span></div>`));
+    qrows.appendChild(valorRow(b.C16, 15, pct15));
+    qrows.appendChild(qLine('− Descuentos del 15', b.D16));
+    qrows.appendChild(qLine('= A favor', b.E16, 'fav'));
+    qrows.appendChild(el(`<div class="q-head" style="margin-top:8px">Pago del 30 <span class="qty">(% del salario + horas extras)</span></div>`));
+    qrows.appendChild(valorRow(b.C17, 30, pct30));
+    qrows.appendChild(qLine('+ Horas extras', b.F14));
+    qrows.appendChild(qLine('− Descuentos del 30', b.D17));
+    qrows.appendChild(qLine('= A favor', b.E17, 'fav'));
+    quin.appendChild(qrows);
+    quin.appendChild(el(`<div class="note">Los porcentajes de cada quincena son editables (a veces varían). "A favor" = lo que te queda.</div>`));
     colL.appendChild(quin);
 
     // --- Ahorro del mes ---
