@@ -90,14 +90,19 @@
     const D20 = C3 + F14;                 // TOTAL del mes (salario + horas extras)
     const I28 = E16 + E17;                // FLUJO LIBRE
 
-    // Deudas (L17:M22)  — se muestran tal cual; el total de deuda se toma de I29 (ver nota)
+    // Deudas (L17:M22). Saldo (M) − Abono del mes (AB) = saldo actual. Total = Σ (recalculado en vivo).
     const deudas = [];
+    let deudaTotal = 0;
     for (let r = 17; r <= 22; r++) {
       const label = V(WB, m, 'L' + r);
-      if (label === null || label === undefined || label === '') continue;
-      deudas.push({ label: label, valor: num(V(WB, m, 'M' + r)) });
+      if (label === null || label === undefined || label === '' || /total/i.test(String(label))) continue;
+      const saldo = num(V(WB, m, 'M' + r));
+      const abono = num(V(WB, m, 'AB' + r));
+      const bal = saldo - abono;
+      deudas.push({ row: r, label: label, saldo: saldo, abono: abono, valor: bal });
+      deudaTotal += bal;
     }
-    const I29 = num(V(WB, m, 'I29'));     // "deuda" mostrada en distribución
+    const I29 = deudaTotal;               // deuda total en vivo (baja al abonar/editar)
 
     return {
       C3, D, F, F14, hoursRows, Q3, Q4, Q5,
@@ -191,11 +196,11 @@
       hoursRows: b.hoursRows, totalHoras: b.F14,
       pctSalarioBasico: (A4 - b.F14) ? b.F14 / (A4 - b.F14) : 0, // C20
       deudas: b.deudas,
-      // Distribución del dinero DEL MES (sin la deuda, que es saldo acumulado y se ve en su tarjeta)
       distribucion: [
         { label: 'Gastos y descuentos', value: G9 },
         { label: 'Ahorro e inversión', value: G10 },
         { label: 'Flujo libre', value: G11 },
+        { label: 'Deuda', value: G12 },
       ],
       metaAnual, metaCumplido, metaRestante, metaPct,
       totalUSD: base.__meta.totalUSD,

@@ -227,7 +227,7 @@
     });
     dflex.appendChild(leg);
     dist.appendChild(dflex);
-    dist.appendChild(el(`<div class="note">Distribución del dinero del mes. La deuda (saldo acumulado: ${F.cop(R.deuda)}) se muestra en su propia tarjeta.</div>`));
+    dist.appendChild(el(`<div class="note">Distribución del dinero del mes (incluye la deuda: ${F.cop(R.deuda)}).</div>`));
 
     // -- Deudas
     const deu = el(`<div class="card"><h3>Deudas</h3></div>`);
@@ -379,21 +379,26 @@
     ah.appendChild(el(`<div class="note">Saludable si el total ≥ 10% del salario básico (${F.cop(b.C3 * 0.1)}).</div>`));
     colL.appendChild(ah);
 
-    // --- Deudas (editable) ---
+    // --- Deudas (Saldo − Abono del mes = saldo actual) ---
     const deu = el(`<div class="card"><h3>Deudas</h3></div>`);
     const deuRows = el(`<div class="rows"></div>`);
     let totDeuda = 0;
-    for (let r = 17; r <= 22; r++) {
-      const label = cval(m, 'L' + r);
-      if (!label || /total/i.test(String(label))) continue;
-      const val = F.num(cval(m, 'M' + r));
-      totDeuda += val;
-      const row = el(`<div class="row m-row"><div class="name">${label}</div></div>`);
-      row.appendChild(moneyInput('M' + r, val, { label: label }));
-      deuRows.appendChild(row);
-    }
+    b.deudas.forEach((d) => {
+      totDeuda += d.valor;
+      const item = el(`<div class="deuda-item"></div>`);
+      item.appendChild(el(`<div class="di-top"><span class="di-name">${d.label}</span><span class="di-bal">${F.cop(d.valor)}</span></div>`));
+      const fields = el(`<div class="di-fields"></div>`);
+      const sWrap = el(`<label class="di-field"><span>Saldo</span></label>`);
+      sWrap.appendChild(moneyInput('M' + d.row, d.saldo, { label: 'saldo ' + d.label }));
+      const aWrap = el(`<label class="di-field"><span>Abono del mes</span></label>`);
+      aWrap.appendChild(moneyInput('AB' + d.row, d.abono, { label: 'abono ' + d.label }));
+      fields.appendChild(sWrap); fields.appendChild(aWrap);
+      item.appendChild(fields);
+      deuRows.appendChild(item);
+    });
     deu.appendChild(deuRows);
     deu.appendChild(el(`<div class="total-row"><span>Total deudas</span><span>${F.cop(totDeuda)}</span></div>`));
+    deu.appendChild(el(`<div class="note">Registra el <strong>abono del mes</strong> y el saldo baja automáticamente. El total refleja los abonos.</div>`));
     colL.appendChild(deu);
 
     // --- Descuentos del 30 (I5:I20) ---

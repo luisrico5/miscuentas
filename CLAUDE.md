@@ -51,6 +51,7 @@ Sin datos remotos: usa `sample_data` (local) o `TEMPLATE` (GitHub). Guardar = `D
 - Salud/Pensión = (C3+F14)×0.04; aporte sindical = C3×0.01; pólizas por defecto 15098 (editable).
 - Prima: `D21 = (Σ D20 del semestre + X)/6`; `D22 = D21/2 − deducción`. X y deducción en `params`.
 - Descuentos: total completo alimenta el Resumen; las casillas ✔ dan el **pendiente** (total − marcados).
+- Deuda: total (I29) = Σ(saldo M17:M22 − abono ABr) recalculado en vivo (baja al abonar/editar). El "abono del mes" se guarda como override en pseudo-celda `AB{fila}`.
 - Prima extralegal (C7/C8) solo se muestra en el **2º semestre** (índice de mes ≥ 6), debajo de "Prima del semestre", junto a la Meta anual.
 
 ## Imágenes / íconos
