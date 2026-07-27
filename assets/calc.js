@@ -191,11 +191,11 @@
       hoursRows: b.hoursRows, totalHoras: b.F14,
       pctSalarioBasico: (A4 - b.F14) ? b.F14 / (A4 - b.F14) : 0, // C20
       deudas: b.deudas,
+      // Distribución del dinero DEL MES (sin la deuda, que es saldo acumulado y se ve en su tarjeta)
       distribucion: [
         { label: 'Gastos y descuentos', value: G9 },
         { label: 'Ahorro e inversión', value: G10 },
         { label: 'Flujo libre', value: G11 },
-        { label: 'Deuda', value: G12 },
       ],
       metaAnual, metaCumplido, metaRestante, metaPct,
       totalUSD: base.__meta.totalUSD,

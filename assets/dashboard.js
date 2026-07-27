@@ -227,7 +227,7 @@
     });
     dflex.appendChild(leg);
     dist.appendChild(dflex);
-    dist.appendChild(el(`<div class="note">Nota: la "Deuda" (${F.cop(R.deuda)}) es saldo acumulado; por eso domina la dona. ¿La separamos del gasto mensual en la versión final?</div>`));
+    dist.appendChild(el(`<div class="note">Distribución del dinero del mes. La deuda (saldo acumulado: ${F.cop(R.deuda)}) se muestra en su propia tarjeta.</div>`));
 
     // -- Deudas
     const deu = el(`<div class="card"><h3>Deudas</h3></div>`);
