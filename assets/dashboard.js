@@ -570,10 +570,14 @@
     state.overrides = opts.overrides || {};
     state.extra = opts.extra || {};
     state.paramsByYear = opts.paramsByYear || (opts.params ? { '2026': opts.params } : {});
-    state.month = 'JUL 26';
-    setYear('2026');
-    // mes por defecto: JUL del año activo
-    state.month = WB.monthsOrder.find((m) => m.indexOf('JUL') === 0) || WB.monthsOrder[0];
+    // Abrir en el MES y AÑO actuales (según la fecha del dispositivo)
+    const hoy = new Date();
+    const anioActual = String(hoy.getFullYear());
+    state.year = YEARS.includes(anioActual) ? anioActual : YEARS[0];
+    WB = state.byYear[state.year];
+    if (!state.paramsByYear[state.year]) state.paramsByYear[state.year] = {};
+    state.params = state.paramsByYear[state.year];
+    state.month = WB.monthsOrder[hoy.getMonth()] || WB.monthsOrder[0]; // getMonth(): 0=ENE … 11=DIC
     boot();
     recompute();
   }
