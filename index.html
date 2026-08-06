@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard de Extras</title>
-  <link rel="stylesheet" href="assets/styles.css">
+  <!-- CSS con marca de versión (evita caché viejo, sin parpadeo) -->
+  <script>document.write('<link rel="stylesheet" href="assets/styles.css?v=' + Date.now() + '">');</script>
 </head>
 <body>
   <!-- ===== Puerta de acceso (todo oculto hasta autenticarse) ===== -->
@@ -59,13 +60,20 @@
     <footer>Dashboard de Extras · réplica del RESUMEN · datos cifrados de extremo a extremo.</footer>
   </div>
 
-  <script src="assets/format.js"></script>
-  <script src="assets/template.js"></script>
-  <script src="assets/sample_data.js" onerror="window.__noSeed=true"></script>
-  <script src="assets/calc.js"></script>
-  <script src="assets/dashboard.js"></script>
-  <script src="assets/crypto.js"></script>
-  <script src="assets/firebase.js"></script>
-  <script src="assets/app.js"></script>
+  <!-- Cargador con marca de versión: siempre trae la última versión (adiós caché viejo).
+       async=false conserva el orden de ejecución. -->
+  <script>
+    (function () {
+      var v = '?v=' + Date.now();
+      var files = ['format.js', 'template.js', 'sample_data.js', 'calc.js', 'dashboard.js', 'crypto.js', 'firebase.js', 'app.js'];
+      files.forEach(function (f) {
+        var s = document.createElement('script');
+        s.src = 'assets/' + f + v;
+        s.async = false;
+        if (f === 'sample_data.js') s.onerror = function () { window.__noSeed = true; };
+        document.body.appendChild(s);
+      });
+    })();
+  </script>
 </body>
 </html>

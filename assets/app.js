@@ -169,5 +169,7 @@
       demo.hidden = true; // en producción (GitHub) no hay datos de muestra: es lo esperado
     }
   }
-  window.addEventListener('DOMContentLoaded', boot);
+  // Los scripts se cargan de forma dinámica, así que DOMContentLoaded pudo dispararse ya.
+  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
