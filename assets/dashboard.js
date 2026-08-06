@@ -422,6 +422,24 @@
     pRow.appendChild(xInp);
     primaC.appendChild(el(`<div class="rows"></div>`)).appendChild(pRow);
     primaC.appendChild(el(`<div class="total-row"><span>Prima estimada</span><span>${F.cop(b.D22)}</span></div>`));
+
+    // Lista: promedio de los 6 meses del semestre actual (salario + extras de cada mes)
+    const NOMBRE_MES = { ENE: 'Enero', FEB: 'Febrero', MARZ: 'Marzo', ABRIL: 'Abril', MAYO: 'Mayo', JUN: 'Junio', JUL: 'Julio', AGO: 'Agosto', SEP: 'Septiembre', OCT: 'Octubre', NOV: 'Noviembre', DIC: 'Diciembre' };
+    const mesesSem = semIdx === 1 ? state.wb.monthsOrder.slice(0, 6) : state.wb.monthsOrder.slice(6, 12);
+    const promRows = el(`<div class="rows" style="margin-top:6px"></div>`);
+    promRows.appendChild(el(`<div class="q-head">Promedio del semestre ${semIdx} <span class="qty">(salario + extras por mes)</span></div>`));
+    let sumaSem = 0;
+    mesesSem.forEach((mk) => {
+      const d20 = state.base[mk] ? state.base[mk].D20 : 0;
+      sumaSem += d20;
+      const nombre = NOMBRE_MES[mk.replace(/\s*\d{2}$/, '')] || mk;
+      promRows.appendChild(el(`<div class="q-row"><div class="name">${nombre}</div><div class="amt">${F.cop(d20)}</div></div>`));
+    });
+    const xVal = (state.params.semX && state.params.semX[semIdx] !== undefined) ? state.params.semX[semIdx] : CALC.DEFAULT_PARAMS.semX[semIdx];
+    if (xVal) promRows.appendChild(el(`<div class="q-row"><div class="name">+ Valor X</div><div class="amt">${F.cop(xVal)}</div></div>`));
+    promRows.appendChild(el(`<div class="q-row"><div class="name">Suma</div><div class="amt">${F.cop(sumaSem + (xVal || 0))}</div></div>`));
+    promRows.appendChild(el(`<div class="q-row fav"><div class="name">Promedio (÷ 6)</div><div class="amt">${F.cop((sumaSem + (xVal || 0)) / 6)}</div></div>`));
+    primaC.appendChild(promRows);
     primaC.appendChild(el(`<div class="note">Prima = (suma de los 6 totales mensuales del semestre + X) ÷ 6.</div>`));
     colR.appendChild(primaC);
 
