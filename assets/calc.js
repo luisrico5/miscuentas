@@ -191,7 +191,8 @@
       ahorroPesos: b.Q3, ahorroDolares: b.Q4, ahorroPesVar, ahorroDolVar,
       pctIngresos: A4 ? G11 / A4 : 0,          // C6
       primaValor: b.D22, primaLabel: V(WB, m, 'C22') || 'Prima',
-      primaExtraLabel: V(WB, m, 'C23') || '', primaExtraValor: num(V(WB, m, 'D23')),
+      // Prima extralegal = D21/30*26 (fórmula del Excel). D21 = promedio semestral → se actualiza con salario/horas/X.
+      primaExtraLabel: V(WB, m, 'C23') || '', primaExtraValor: (b.D21 || 0) / 30 * 26,
       gastosDescuentos: G9, ahorroInversion: G10, flujoLibre: G11, deuda: G12,
       hoursRows: b.hoursRows, totalHoras: b.F14,
       pctSalarioBasico: (A4 - b.F14) ? b.F14 / (A4 - b.F14) : 0, // C20
