@@ -33,28 +33,99 @@
     else { mb.innerHTML = ''; mb.hidden = true; }
   }
 
+  let saveTimer = null, saving = false;
+  function setSaveStatus(txt) { const b = $('saveBtn'); if (b) b.innerHTML = txt; }
+
   function wireAppButtons(loggedIn) {
     $('logoutBtn').hidden = !loggedIn;
     $('saveBtn').hidden = !loggedIn;
     if (loggedIn) {
-      $('logoutBtn').onclick = () => { location.reload(); };
-      $('saveBtn').onclick = doSave;
+      $('logoutBtn').onclick = () => {
+        if ((saveTimer || saving) && !confirm('Hay cambios guardándose. ¿Salir de todas formas?')) return;
+        location.reload();
+      };
+      $('saveBtn').onclick = () => saveNow(false);
+      window.__onDirty = scheduleAutoSave;   // AUTOGUARDADO al editar
+      window.addEventListener('beforeunload', (e) => { if (saveTimer || saving) { e.preventDefault(); e.returnValue = ''; } });
     }
+    // Herramientas (respaldo / CSV) para la vista Ajustes
+    window.APP = { exportBackup, importBackup, exportCSV };
   }
 
-  async function doSave() {
-    const btn = $('saveBtn');
+  function scheduleAutoSave() {
+    setSaveStatus('✏️ Sin guardar…');
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveNow(true), 1800);   // guarda 1.8s después del último cambio
+  }
+
+  async function saveNow(auto) {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    if (!sessionPassword) { if (!auto) alert('Inicia sesión para guardar.'); return; }
+    if (saving) return;
+    saving = true;
+    setSaveStatus('💾 Guardando…');
     try {
-      btn.disabled = true; btn.textContent = '💾 Guardando…';
       const snap = window.DASH.snapshot();
       const enc = await window.CRYPTOX.encryptJSON(snap, sessionPassword);
       await window.FB.savePayload(enc);
-      btn.textContent = '✅ Guardado';
-      setTimeout(() => { btn.textContent = '💾 Guardar'; btn.disabled = false; }, 1500);
+      setSaveStatus('✅ Guardado');
+      setTimeout(() => { if (!saving && !saveTimer) setSaveStatus('💾 Guardar'); }, 1500);
     } catch (e) {
-      btn.textContent = '💾 Guardar'; btn.disabled = false;
-      alert('No se pudo guardar: ' + e.message);
-    }
+      setSaveStatus('⚠️ Reintentar');
+      if (!auto) alert('No se pudo guardar: ' + e.message);
+    } finally { saving = false; }
+  }
+  async function doSave() { return saveNow(false); }
+
+  // ---------- Herramientas: respaldo cifrado, CSV ----------
+  function download(name, content, mime) {
+    const blob = new Blob([content], { type: mime || 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+  }
+  const hoyISO = () => new Date().toISOString().slice(0, 10);
+
+  async function exportBackup() {
+    if (!sessionPassword) { alert('Inicia sesión para exportar un respaldo cifrado.'); return; }
+    try {
+      const snap = window.DASH.snapshot();
+      const enc = await window.CRYPTOX.encryptJSON(snap, sessionPassword);
+      download('respaldo-extras-' + hoyISO() + '.json', JSON.stringify({ tipo: 'extras-backup', cifrado: true, payload: enc }, null, 0), 'application/json');
+    } catch (e) { alert('No se pudo exportar: ' + e.message); }
+  }
+
+  function importBackup() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0]; if (!file) return;
+      try {
+        const obj = JSON.parse(await file.text());
+        let data;
+        if (obj.cifrado && obj.payload) {
+          const pass = prompt('Contraseña del respaldo (la que usaste al exportarlo):');
+          if (!pass) return;
+          data = await window.CRYPTOX.decryptJSON(obj.payload, pass);
+        } else if (obj.data) { data = obj.data; }
+        else if (obj.byYear || obj.months) { data = obj; }
+        else throw new Error('Archivo de respaldo no reconocido.');
+        if (!confirm('Esto REEMPLAZARÁ tus datos actuales con el respaldo. ¿Continuar?')) return;
+        window.DASH.loadState(data);
+        if (sessionPassword) await saveNow(false);
+        alert('Respaldo importado correctamente.');
+      } catch (e) { alert('No se pudo importar: ' + e.message); }
+    };
+    inp.click();
+  }
+
+  function exportCSV() {
+    const info = window.DASH.exportRows();
+    const csv = info.rows.map((r) => r.map((c) => {
+      const s = String(c);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(',')).join('\n');
+    download('extras-' + info.year + '.csv', '﻿' + csv, 'text/csv;charset=utf-8');
   }
 
   async function doLogin() {

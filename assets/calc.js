@@ -13,6 +13,9 @@
     tasaDolar: 3600,                   // Q5 = Q3 + Q4 * tasaDolar
     metaMensualAhorro: 3697884 / 10,   // base de A21 = 3697884/10*12
     quincena: { 15: 0.266666637785683, 30: 0.733 }, // % del salario por quincena (editables)
+    metaAnual: 3697884 / 10 * 12,      // meta anual de ahorro (editable)
+    topeDeuda: 40000000,               // alerta si la deuda supera esto (editable)
+    umbralFlujo: 100000,               // flujo libre mínimo saludable (editable)
   };
 
   // Coeficientes de valor/hora (divisor fijo 210)
@@ -163,25 +166,43 @@
     const ahorroPesVar = varPct(b.Q3, prev ? base[prev].Q3 : 0);
     const ahorroDolVar = varPct(b.Q4, prev ? base[prev].Q4 : 0);
 
-    // Meta anual de ahorro
-    const metaAnual = P.metaMensualAhorro * 12; // A21
+    // Comparativa genérica vs mes anterior (para gastos, flujo, deuda) — solo ▲/▼ %
+    function delta(actual, antKey) {
+      if (prev === null) return { txt: '', dir: 'flat', pct: null };
+      const ant = base[prev][antKey];
+      if (ant === undefined || ant === 0) return { txt: '', dir: 'flat', pct: null };
+      const v = (actual - ant) / ant;
+      const dir = actual > ant ? 'up' : (actual < ant ? 'down' : 'flat');
+      const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '▬';
+      return { txt: arrow + ' ' + F.pct1(Math.abs(v)), dir, pct: v };
+    }
+    const gastosVar = delta(G9, 'I26');
+    const flujoVar = delta(G11, 'I28');
+    const deudaVar = delta(G12, 'I29');
+
+    // Umbrales personalizables (con valores por defecto)
+    const topeDeuda = P.topeDeuda != null ? P.topeDeuda : 40000000;
+    const umbralFlujo = P.umbralFlujo != null ? P.umbralFlujo : 100000;
+
+    // Meta anual de ahorro (personalizable)
+    const metaAnual = P.metaAnual != null ? P.metaAnual : (P.metaMensualAhorro * 12);
     const metaCumplido = G10;                    // W19
     const metaRestante = Math.max(0, metaAnual - metaCumplido); // W20
     const metaPct = metaAnual ? metaCumplido / metaAnual : 0;
 
-    // Mensajes automáticos (K1..K3, L1)
-    const msgCamino = G11 >= 100000 ? 'Vas por buen camino' : 'Debes reducir tus gastos';
-    const msgEndeud = G12 > 40000000 ? 'Considera reducir tu nivel de endeudamiento'
+    // Mensajes automáticos (K1..K3, L1) — usan umbrales personalizables
+    const msgCamino = G11 >= umbralFlujo ? 'Vas por buen camino' : 'Debes reducir tus gastos';
+    const msgEndeud = G12 > topeDeuda ? 'Considera reducir tu nivel de endeudamiento'
                                      : 'Tu endeudamiento es Sostenible, sigue así';
-    const msgFlujo = G11 >= 100000 ? 'Tu flujo libre es positivo 👍' : 'Para aumentar tu flujo de caja';
+    const msgFlujo = G11 >= umbralFlujo ? 'Tu flujo libre es positivo 👍' : 'Para aumentar tu flujo de caja';
     const ahorroSaludable = b.Q5 >= b.C3 * 0.1;
     const msgAhorro = ahorroSaludable ? 'Tu ahorro del mes es saludable' : 'Tu ahorro este mes no es saludable';
 
     // Semáforos (de las macros VBA)
     const sem = {
       ahorroSaludable,
-      flujoPositivo: G11 > 100000,
-      endeudamientoAlto: G12 > 40000000,
+      flujoPositivo: G11 > umbralFlujo,
+      endeudamientoAlto: G12 > topeDeuda,
       tienePrimaExtra: !!(V(WB, m, 'C23')),
     };
 
@@ -194,6 +215,7 @@
       // Prima extralegal = D21/30*26 (fórmula del Excel). D21 = promedio semestral → se actualiza con salario/horas/X.
       primaExtraLabel: V(WB, m, 'C23') || '', primaExtraValor: (b.D21 || 0) / 30 * 26,
       gastosDescuentos: G9, ahorroInversion: G10, flujoLibre: G11, deuda: G12,
+      gastosVar, flujoVar, deudaVar,
       hoursRows: b.hoursRows, totalHoras: b.F14,
       pctSalarioBasico: (A4 - b.F14) ? b.F14 / (A4 - b.F14) : 0, // C20
       deudas: b.deudas,

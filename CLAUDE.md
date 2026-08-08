@@ -54,6 +54,17 @@ Sin datos remotos: usa `sample_data` (local) o `TEMPLATE` (GitHub). Guardar = `D
 - Deuda: total (I29) = Σ(saldo M17:M22 − abono ABr) recalculado en vivo (baja al abonar/editar). El "abono del mes" se guarda como override en pseudo-celda `AB{fila}`.
 - Prima extralegal = D21/30*26 (fórmula del Excel D23); D21 = promedio semestral, así que se actualiza con salario/horas/X. Solo se muestra en el **2º semestre** (índice de mes ≥ 6), debajo de "Prima del semestre", junto a la Meta anual.
 
+## Funciones extra (agregadas después del core)
+
+- **Vista "Ajustes"** (`renderAjustes`): metas/alertas personalizables (`state.config` = {metaAnual, topeDeuda, umbralFlujo}, se mergea en los params de `computeAll`), respaldo cifrado (export/import .json) y exportar CSV / imprimir.
+- **Autoguardado**: `markDirty()` llama `window.__onDirty` (definido en app.js como debounce de `saveNow`, solo si hay sesión). Aviso `beforeunload` si hay guardado pendiente. El botón "Guardar" muestra el estado.
+- **Respaldo/CSV** (app.js → `window.APP`): `exportBackup` (snapshot cifrado con la contraseña), `importBackup` (descifra y `DASH.loadState`), `exportCSV` (usa `DASH.exportRows`).
+- **Arrastre de deuda**: botón en Editar mes que copia el saldo actual (saldo−abono) al mes siguiente como `M{fila}` y pone `AB{fila}=0` (overrides).
+- **Tendencia anual**: `lineChart()` SVG (un eje). Dos gráficos: ingreso/gastos/flujo y deuda (escala aparte).
+- **Comparativa vs mes anterior**: `delta()` en calc → `gastosVar/flujoVar/deudaVar`; `deltaSmall(v, invert)` colorea (gastos/deuda: subir = rojo).
+- **Preferencias** (localStorage `extras.pref.*`): tema y última vista. El mes/año sigue abriendo en el actual.
+- `snapshot()` ahora incluye `config`. Formato guardado v2: {byYear, overrides, extra, paramsByYear, config}.
+
 ## Imágenes / íconos
 
 `assets/img/image{1,2,4,5,7,...}.png` se extrajeron del Excel (`xl/media`) y se mapearon por nombre de shape (Imagen 7=ingreso, 11=ahorro, 49=flujo, 52=deuda, 1028=prima extralegal). Son genéricos (sin datos), SÍ van al repo. Cada KPI del Resumen muestra su ícono + una leyenda de estado con color por semáforo. Los íconos de KPI (`.kpi-ico`) miden 32px en móvil y **38px en computador** (`@media min-width:641px`).

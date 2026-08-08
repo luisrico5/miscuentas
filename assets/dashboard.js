@@ -5,7 +5,7 @@
   let WB = null; // datos FUENTE del año activo (state.byYear[state.year])
   const state = {
     year: '2026', month: 'JUL 26', view: 'resumen', base: null,
-    params: {}, overrides: {}, extra: {}, byYear: {}, paramsByYear: {}, onSave: null, dirty: false,
+    params: {}, overrides: {}, extra: {}, byYear: {}, paramsByYear: {}, config: {}, onSave: null, dirty: false,
   };
   const cell = (m, c) => (state.wb.months[m] && state.wb.months[m][c]) || null;
   const cval = (m, c) => { const x = cell(m, c); return x ? x.v : null; };
@@ -56,13 +56,50 @@
 
   function recompute() {
     const wb = applyOverrides();
-    state.base = CALC.computeAll(wb, Object.assign({}, state.params, { extra: state.extra }));
+    state.base = CALC.computeAll(wb, Object.assign({}, state.params, state.config, { extra: state.extra }));
     state.wb = wb;
     render();
   }
 
   // ---------- Helpers de dibujo ----------
   function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+
+  // Redondeo "bonito" hacia arriba para el eje Y
+  function niceCeil(x) {
+    if (x <= 0) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(x)));
+    const f = x / p;
+    const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+    return nf * p;
+  }
+  // Gráfico de líneas SVG (multi-serie, un solo eje). series: [{label,color,values[]}]
+  function lineChart(series, labels, opts) {
+    opts = opts || {};
+    const W = opts.width || 900, H = opts.height || 230;
+    const padL = 66, padR = 14, padT = 12, padB = 24;
+    const plotW = W - padL - padR, plotH = H - padT - padB, n = labels.length;
+    let max = 0;
+    series.forEach((s) => s.values.forEach((v) => { if (v > max) max = v; }));
+    const niceMax = niceCeil(max);
+    const x = (i) => padL + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+    const y = (v) => padT + plotH - (v / niceMax) * plotH;
+    let grid = '';
+    const ticks = 4;
+    for (let t = 0; t <= ticks; t++) {
+      const val = niceMax * t / ticks, gy = y(val);
+      grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`;
+      grid += `<text x="${padL - 8}" y="${(gy + 3).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--muted)">${F.int(val)}</text>`;
+    }
+    let xlab = '';
+    labels.forEach((lb, i) => { xlab += `<text x="${x(i).toFixed(1)}" y="${H - 7}" text-anchor="middle" font-size="9.5" fill="var(--muted)">${lb}</text>`; });
+    let lines = '';
+    series.forEach((s) => {
+      const pts = s.values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+      lines += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      s.values.forEach((v, i) => { lines += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.6" fill="${s.color}"><title>${labels[i]}: ${F.cop(v)}</title></circle>`; });
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${opts.aria || 'tendencia'}">${grid}${lines}${xlab}</svg>`;
+  }
 
   // ---------- Inputs editables (nivel módulo, usados por renderMes y descuentosCard) ----------
   const parseMoney = (s) => parseInt(String(s).replace(/[^\d-]/g, ''), 10) || 0;
@@ -134,6 +171,13 @@
     const cls = v.dir === 'up' ? 'up' : v.dir === 'down' ? 'down' : 'flat';
     return `<span class="delta ${cls}">${v.txt}</span>`;
   }
+  // Delta pequeño vs mes anterior. invert=true para gastos/deuda (subir = rojo).
+  function deltaSmall(v, invert) {
+    if (!v || v.pct === null || !v.txt) return '';
+    let cls = v.dir === 'up' ? 'up' : v.dir === 'down' ? 'down' : 'flat';
+    if (invert) cls = v.dir === 'up' ? 'down' : v.dir === 'down' ? 'up' : 'flat';
+    return ` <span class="delta ${cls}" style="font-size:11px" title="vs mes anterior">${v.txt}</span>`;
+  }
 
   // ---------- Render (dispatcher por vista) ----------
   function render() {
@@ -142,12 +186,66 @@
     if (ySel) ySel.value = state.year;
     const btnR = document.getElementById('viewResumenBtn');
     const btnM = document.getElementById('viewMesBtn');
+    const btnA = document.getElementById('viewAjustesBtn');
     if (btnR && btnM) {
-      btnR.classList.toggle('active', state.view !== 'mes');
+      btnR.classList.toggle('active', state.view === 'resumen');
       btnM.classList.toggle('active', state.view === 'mes');
+      if (btnA) btnA.classList.toggle('active', state.view === 'ajustes');
     }
     if (state.view === 'mes') renderMes();
+    else if (state.view === 'ajustes') renderAjustes();
     else renderResumen();
+  }
+
+  // ---------- Vista AJUSTES (metas, respaldo, exportar) ----------
+  function renderAjustes() {
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+    const cfg = state.config || {};
+    const DP = CALC.DEFAULT_PARAMS;
+    const layout = el(`<div class="two-col"></div>`);
+    const colL = el(`<div class="col"></div>`);
+    const colR = el(`<div class="col"></div>`);
+
+    // --- Metas y alertas ---
+    const metas = el(`<div class="card"><h3>Metas y alertas</h3></div>`);
+    const mRows = el(`<div class="rows"></div>`);
+    function cfgRow(label, key, def) {
+      const row = el(`<div class="row m-row"><div class="name">${label}</div></div>`);
+      const cur = cfg[key] != null ? cfg[key] : def;
+      const inp = moneyInput(null, cur, { onChange: (v) => { state.config[key] = v; markDirty(); recompute(); } });
+      row.appendChild(inp);
+      return row;
+    }
+    mRows.appendChild(cfgRow('Meta anual de ahorro', 'metaAnual', DP.metaAnual));
+    mRows.appendChild(cfgRow('Alerta si la deuda supera', 'topeDeuda', DP.topeDeuda));
+    mRows.appendChild(cfgRow('Flujo libre mínimo saludable', 'umbralFlujo', DP.umbralFlujo));
+    metas.appendChild(mRows);
+    metas.appendChild(el(`<div class="note">Estos valores controlan la meta de ahorro y los semáforos (endeudamiento, flujo). Se guardan cifrados.</div>`));
+    colL.appendChild(metas);
+
+    // --- Respaldo cifrado ---
+    const bkp = el(`<div class="card"><h3>Respaldo cifrado</h3></div>`);
+    bkp.appendChild(el(`<div class="note" style="margin:0 0 10px">Descarga una copia cifrada de todos tus datos, o restaura desde un archivo. Útil si cambias de cuenta o como copia de seguridad.</div>`));
+    const bExp = el(`<button class="btn add-concept">⬇️ Exportar respaldo (.json cifrado)</button>`);
+    bExp.addEventListener('click', () => { if (window.APP && window.APP.exportBackup) window.APP.exportBackup(); });
+    const bImp = el(`<button class="btn add-concept">⬆️ Importar respaldo</button>`);
+    bImp.addEventListener('click', () => { if (window.APP && window.APP.importBackup) window.APP.importBackup(); });
+    bkp.appendChild(bExp); bkp.appendChild(bImp);
+    colL.appendChild(bkp);
+
+    // --- Exportar / Imprimir ---
+    const exp = el(`<div class="card"><h3>Exportar reporte</h3></div>`);
+    exp.appendChild(el(`<div class="note" style="margin:0 0 10px">Descarga el resumen del año en Excel (CSV) o genera un PDF con imprimir.</div>`));
+    const bCsv = el(`<button class="btn add-concept">📊 Exportar a Excel (CSV)</button>`);
+    bCsv.addEventListener('click', () => { if (window.APP && window.APP.exportCSV) window.APP.exportCSV(); });
+    const bPdf = el(`<button class="btn add-concept">🖨️ Imprimir / Guardar PDF</button>`);
+    bPdf.addEventListener('click', () => { window.print(); });
+    exp.appendChild(bCsv); exp.appendChild(bPdf);
+    colR.appendChild(exp);
+
+    layout.appendChild(colL); layout.appendChild(colR);
+    app.appendChild(layout);
   }
 
   // ---------- Vista RESUMEN (solo lectura) ----------
@@ -182,7 +280,7 @@
       <img class="kpi-ico" src="${IMG}image4.png" alt="">
       <div class="label">Flujo libre</div>
       <div class="value">${F.cop(R.flujoLibre)}</div>
-      <div class="sub">${F.pct1(R.pctIngresos)} de los ingresos</div>
+      <div class="sub">${F.pct1(R.pctIngresos)} de los ingresos${deltaSmall(R.flujoVar, false)}</div>
       ${statusLine(R.msgFlujo, R.sem.flujoPositivo ? 'good' : 'warn')}
     </div>`));
 
@@ -227,7 +325,7 @@
     });
     dflex.appendChild(leg);
     dist.appendChild(dflex);
-    dist.appendChild(el(`<div class="note">Distribución del dinero del mes (incluye la deuda: ${F.cop(R.deuda)}).</div>`));
+    dist.appendChild(el(`<div class="note">Distribución del dinero del mes (incluye la deuda: ${F.cop(R.deuda)}). Gastos vs mes anterior: ${R.gastosVar.txt || 'sin dato'}.</div>`));
 
     // -- Deudas
     const deu = el(`<div class="card"><h3>Deudas</h3></div>`);
@@ -243,7 +341,7 @@
     });
     deu.appendChild(drows);
     const totDeuda = deudasList.reduce((a, d) => a + d.valor, 0);
-    deu.appendChild(el(`<div class="total-row"><span>Total deudas</span><span>${F.cop(totDeuda)}</span></div>`));
+    deu.appendChild(el(`<div class="total-row"><span>Total deudas ${deltaSmall(R.deudaVar, true)}</span><span>${F.cop(totDeuda)}</span></div>`));
     deu.appendChild(el(`<div class="status ${R.sem.endeudamientoAlto ? 'bad' : 'good'}"><img class="status-ico" src="${IMG}image5.png" alt="">${R.msgEndeud}</div>`));
 
     // -- Meta anual de ahorro (medio círculo compacto) + Prima extralegal al lado
@@ -296,6 +394,27 @@
     colR.appendChild(dist); colR.appendChild(meta); colR.appendChild(afavorCard);
     layout.appendChild(colL); layout.appendChild(colR);
     app.appendChild(layout);
+
+    // -- Tendencia anual (gráfico de líneas de los 12 meses del año)
+    const yearKeys = state.byYear[state.year].monthsOrder;
+    const labels = yearKeys.map((k) => k.replace(/\s*\d{2}$/, ''));
+    const val = (k, f) => (state.base[k] ? state.base[k][f] : 0);
+    const trend = el(`<div class="card"><h3>Tendencia anual ${state.year}</h3></div>`);
+    trend.appendChild(el(`<div class="legend-row">
+      <span class="li"><span class="sw" style="background:var(--accent)"></span>Ingreso</span>
+      <span class="li"><span class="sw" style="background:var(--s-deuda)"></span>Gastos</span>
+      <span class="li"><span class="sw" style="background:var(--s-ahorro)"></span>Flujo libre</span>
+    </div>`));
+    trend.appendChild(el(lineChart([
+      { label: 'Ingreso', color: 'var(--accent)', values: yearKeys.map((k) => val(k, 'D20')) },
+      { label: 'Gastos', color: 'var(--s-deuda)', values: yearKeys.map((k) => val(k, 'I26')) },
+      { label: 'Flujo', color: 'var(--s-ahorro)', values: yearKeys.map((k) => val(k, 'I28')) },
+    ], labels, { aria: 'ingreso, gastos y flujo por mes' })));
+    trend.appendChild(el(`<div class="q-head" style="margin-top:10px">Deuda total por mes</div>`));
+    trend.appendChild(el(lineChart([
+      { label: 'Deuda', color: 'var(--s-deuda)', values: yearKeys.map((k) => val(k, 'I29')) },
+    ], labels, { aria: 'deuda por mes', height: 170 })));
+    app.appendChild(trend);
   }
 
   // ---------- Vista MENSUAL (editable) ----------
@@ -398,7 +517,24 @@
     });
     deu.appendChild(deuRows);
     deu.appendChild(el(`<div class="total-row"><span>Total deudas</span><span>${F.cop(totDeuda)}</span></div>`));
-    deu.appendChild(el(`<div class="note">Registra el <strong>abono del mes</strong> y el saldo baja automáticamente. El total refleja los abonos.</div>`));
+    // Pasar los saldos actuales (saldo − abono) al mes siguiente como punto de partida
+    const ordM = state.wb.monthsOrder;
+    const idxM = ordM.indexOf(m);
+    if (idxM >= 0 && idxM < ordM.length - 1) {
+      const nextM = ordM[idxM + 1];
+      const carryBtn = el(`<button class="btn add-concept">↳ Pasar saldos a ${nextM.replace(/\s*\d{2}$/, '')}</button>`);
+      carryBtn.addEventListener('click', () => {
+        b.deudas.forEach((d) => {
+          state.overrides[nextM] = state.overrides[nextM] || {};
+          state.overrides[nextM]['M' + d.row] = d.valor; // saldo actual = saldo − abono
+          state.overrides[nextM]['AB' + d.row] = 0;
+        });
+        markDirty(); recompute();
+        alert('Saldos de deuda pasados a ' + nextM.replace(/\s*\d{2}$/, '') + ' (con abonos aplicados).');
+      });
+      deu.appendChild(carryBtn);
+    }
+    deu.appendChild(el(`<div class="note">Registra el <strong>abono del mes</strong> y el saldo baja automáticamente. Con el botón "Pasar saldos" el saldo (ya con abonos) queda como base del mes siguiente.</div>`));
     colL.appendChild(deu);
 
     // --- Descuentos del 30 (I5:I20) ---
@@ -536,7 +672,7 @@
     return card;
   }
 
-  function markDirty() { state.dirty = true; }
+  function markDirty() { state.dirty = true; if (typeof window.__onDirty === 'function') window.__onDirty(); }
 
   function setOv(coord, val) {
     state.overrides[state.month] = state.overrides[state.month] || {};
@@ -559,21 +695,31 @@
     document.getElementById('monthSel').addEventListener('change', (e) => { state.month = e.target.value; render(); });
 
     // navegación de vistas
-    document.getElementById('viewResumenBtn').addEventListener('click', () => { state.view = 'resumen'; render(); });
-    document.getElementById('viewMesBtn').addEventListener('click', () => { state.view = 'mes'; render(); });
+    document.getElementById('viewResumenBtn').addEventListener('click', () => { state.view = 'resumen'; savePref('view', 'resumen'); render(); });
+    document.getElementById('viewMesBtn').addEventListener('click', () => { state.view = 'mes'; savePref('view', 'mes'); render(); });
+    const ajBtn = document.getElementById('viewAjustesBtn');
+    if (ajBtn) ajBtn.addEventListener('click', () => { state.view = 'ajustes'; render(); });
 
-    // tema — inicia SIEMPRE en paleta Excel (claro); el botón alterna a oscuro
+    // tema — recuerda la preferencia del dispositivo (por defecto: paleta Excel/claro)
     const themeBtn = document.getElementById('themeBtn');
     function setTheme(t) {
       document.documentElement.setAttribute('data-theme', t);
       themeBtn.innerHTML = t === 'dark' ? '☀️ <span class="lbl">Claro</span>' : '🌙 <span class="lbl">Oscuro</span>';
+      savePref('theme', t);
     }
-    setTheme('light');
+    setTheme(getPref('theme') || 'light');
     themeBtn.addEventListener('click', () => {
       const cur = document.documentElement.getAttribute('data-theme');
       setTheme(cur === 'dark' ? 'light' : 'dark');
     });
+    // recordar última vista (excepto ajustes)
+    const savedView = getPref('view');
+    if (savedView === 'mes') state.view = 'mes';
   }
+
+  // Preferencias locales (tema, vista) por dispositivo
+  function savePref(k, v) { try { localStorage.setItem('extras.pref.' + k, v); } catch (e) {} }
+  function getPref(k) { try { return localStorage.getItem('extras.pref.' + k); } catch (e) { return null; } }
 
   // API pública: arranca el dashboard. Acepta formato multi-año {byYear, overrides, extra, paramsByYear}
   // o el formato antiguo {wb, params, overrides, extra} (se toma como año 2026).
@@ -588,6 +734,7 @@
     state.overrides = opts.overrides || {};
     state.extra = opts.extra || {};
     state.paramsByYear = opts.paramsByYear || (opts.params ? { '2026': opts.params } : {});
+    state.config = opts.config || {};
     // Abrir en el MES y AÑO actuales (según la fecha del dispositivo)
     const hoy = new Date();
     const anioActual = String(hoy.getFullYear());
@@ -602,8 +749,21 @@
 
   // Devuelve el estado a guardar (para cifrar y subir a Firebase) — multi-año
   function snapshot() {
-    return { version: 2, byYear: state.byYear, overrides: state.overrides, extra: state.extra, paramsByYear: state.paramsByYear };
+    return { version: 2, byYear: state.byYear, overrides: state.overrides, extra: state.extra, paramsByYear: state.paramsByYear, config: state.config };
   }
 
-  window.DASH = { start, snapshot };
+  // Carga un estado importado (respaldo) y re-arranca
+  function loadState(data) { booted = true; start(data); }
+  // Datos para exportar CSV (resumen anual del año activo)
+  function exportRows() {
+    const yk = state.byYear[state.year].monthsOrder;
+    const rows = [['Mes', 'Ingreso', 'Gastos y descuentos', 'Flujo libre', 'Deuda', 'Ahorro (Q5)', 'Prima']];
+    yk.forEach((k) => {
+      const bb = state.base[k] || {};
+      rows.push([k, Math.round(bb.D20 || 0), Math.round(bb.I26 || 0), Math.round(bb.I28 || 0), Math.round(bb.I29 || 0), Math.round(bb.Q5 || 0), Math.round(bb.D22 || 0)]);
+    });
+    return { year: state.year, rows };
+  }
+
+  window.DASH = { start, snapshot, loadState, exportRows };
 })();
